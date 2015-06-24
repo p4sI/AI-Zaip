@@ -1,0 +1,5 @@
+Token 0 : Reverse Pyramid, 140% Speed (Färbt nur nach 1/30s Stillstand)
+
+Token 1 : Quader, 100% Speed (Färbt beim drüberlaufen)
+
+Token 2 : Pyramid 70% (Färbt das Feld über das er fährt + das naheste Nachbarfeld).
