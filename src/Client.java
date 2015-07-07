@@ -94,7 +94,7 @@ public class Client {
 	private static void printBoard(){
 		for(int i = 31; i >= 0; i--){
 			for(int j = 0; j < 32; j++){
-				System.out.print(board[j][i] + " ");
+				System.out.format("%3d", board[j][i]);
 			}
 			System.out.println();
 		}
