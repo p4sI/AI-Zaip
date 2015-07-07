@@ -37,17 +37,19 @@ public class Client {
 	private static void init(){
 		myPlayerNo = networkClient.getMyPlayerNumber();
 		initBoard();
+		updateBoard();
 		printBoard();
 	}
 	
 	/*
-	 * Initialisiert das Spielfeld und läd einmal alle Felder
-	 * auch die außerhalb des Rings und den Ring selber
+	 * Initialisiert das Spielfeld so, dass alle Felder zuerst 
+	 * mit -1 belegt sind und somit bei der späteren Berechnung
+	 * von Felder welche angelaufen werden können rausfallen
 	 */
 	private static void initBoard(){
 		for(int i = 0; i < 32; i++){
 	    	for(int j = 0; j < 32; j++){
-	    		board[i][j] = networkClient.getBoard(i, j);
+	    		board[i][j] = -1;
 	    	}
 	    }
 	}
