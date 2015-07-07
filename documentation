@@ -3,3 +3,8 @@ Token 0 : Reverse Pyramid, 140% Speed (Färbt nur nach 1/30s Stillstand)
 Token 1 : Quader, 100% Speed (Färbt beim drüberlaufen)
 
 Token 2 : Pyramid 70% (Färbt das Feld über das er fährt + das naheste Nachbarfeld).
+
+
+Feld abfragen ist lokal, geht schnell, kann man machen. Optimierung: Die nicht erreichbaren Felder nicht abfragen.
+
+Geschwindigkeit: 30x pro sek Bewegung um 1/64 --> ca 4 sek von links nach rechts 
