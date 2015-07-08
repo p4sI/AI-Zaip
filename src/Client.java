@@ -7,6 +7,8 @@ public class Client {
 	static NetworkClient networkClient;
 	static int[][] board = new int[32][32];
 	static int myPlayerNo;
+	static int currentDestinationX = 0;
+	static int currentDestinationY = 0;
 
 	
 	public static void main(String[] args) {
@@ -17,16 +19,90 @@ public class Client {
 	    float startPos = networkClient.getX(myPlayerNo, 1);
 	    int startFeld = networkClient.convertCoord2Board(startPos);
 	    long time = System.nanoTime();
-
+	    System.out.println("Rating: " + rateSector(0, 0, 32));
 		while (networkClient.isAlive()) {
 			updateBoard();
-			Random rnd = new Random();
+			findDestination(0, 0, 32);
+			System.out.println("DestinationX: " + currentDestinationX + " DestinationY: " + currentDestinationY);
+			//if(myPlayerNo == 1) System.out.println("Rating for Player " + myPlayerNo + ": " + rateSector(0, 0, 32));
 		    for (int i = 0; i < 3; ++i) {
-		    	networkClient.setMoveDirection(i, 1, 0);
+		    	networkClient.setMoveDirection(i, 1, 1);
 		    }
 		    networkClient.getBoard(networkClient.convertCoord2Board(networkClient.getX(0, 0)), networkClient.convertCoord2Board(networkClient.getY(0, 0)));
+		    
 		}
 
+	}
+	
+	private static void findDestination(int fromX, int fromY, int size){
+		if(size == 1){
+			currentDestinationX = fromX;
+			currentDestinationY = fromY;
+			return;
+		}
+		float bottomLeftRating = rateSector(fromX, fromY, size/2);
+		float bottomRightRating = rateSector(fromX+size/2, fromY, size/2);
+		float topLeftRating = rateSector(fromX, fromY+size/2, size/2);
+		float topRightRating = rateSector(fromX+size/2, fromY+size/2, size/2);
+		if(bottomLeftRating >= bottomRightRating && bottomLeftRating >= topLeftRating && bottomLeftRating >= topRightRating){
+			findDestination(fromX, fromY, size/2);
+		}
+		else if(bottomRightRating >= bottomLeftRating && bottomRightRating >= topLeftRating && bottomRightRating >= topRightRating){
+			findDestination(fromX+size/2, fromY, size/2);
+		}
+		else if(topLeftRating >= bottomRightRating && topLeftRating >= bottomLeftRating && topLeftRating >= topRightRating){
+			findDestination(fromX, fromY+size/2, size/2);
+		}
+		else if(topRightRating >= bottomRightRating && topRightRating >= bottomLeftRating && topRightRating >= topLeftRating){
+			findDestination(fromX+size/2, fromY+size/2, size/2);
+		}
+			
+	}
+	
+	private static float rateSector(int fromX, int fromY, int size){
+		int fieldCount = size*size;
+		int fieldsNotAccessible = 0;
+		int fieldsFree = 0;
+		int fieldsPlayerOne = 0, fieldsPlayerTwo = 0, fieldsPlayerThree = 0, fieldsPlayerFour = 0;
+		int fieldsTakeable = 0;
+		for(int i = fromX; i < fromX+size; i++){
+			for(int j = fromY; j < fromY+size; j++){
+				switch (board[i][j]){
+					case -1:
+						fieldsNotAccessible++;
+						break;
+					case 0:
+						fieldsFree++;
+						break;
+					case 1:
+						fieldsPlayerOne++;
+						break;
+					case 2:
+						fieldsPlayerTwo++;
+						break;
+					case 3:
+						fieldsPlayerThree++;
+						break;
+					case 4:
+						fieldsPlayerFour++;
+						break;
+				}
+			}
+		}
+		System.out.println("-1: " + fieldsNotAccessible + " 0: " + fieldsFree + " 1: " + fieldsPlayerOne + " 2: " + fieldsPlayerTwo + " 3: " + fieldsPlayerThree + " 4: " + fieldsPlayerFour);
+		if(myPlayerNo == 0){
+			fieldsTakeable = fieldsFree + fieldsPlayerTwo + fieldsPlayerThree + fieldsPlayerFour;
+		} 
+		else if(myPlayerNo == 1){
+			fieldsTakeable = fieldsFree + fieldsPlayerOne + fieldsPlayerThree + fieldsPlayerFour;
+		}
+		else if(myPlayerNo == 2){
+			fieldsTakeable = fieldsFree + fieldsPlayerOne + fieldsPlayerTwo + fieldsPlayerFour;
+		}
+		else if(myPlayerNo == 3){
+			fieldsTakeable = fieldsFree + fieldsPlayerOne + fieldsPlayerTwo + fieldsPlayerThree;
+		}
+		return (float)fieldsTakeable / (float)(fieldCount - fieldsNotAccessible);
 	}
 	
 	/*
@@ -36,6 +112,7 @@ public class Client {
 	 */
 	private static void init(){
 		myPlayerNo = networkClient.getMyPlayerNumber();
+		System.out.println("I am Player Number " + myPlayerNo);
 		initBoard();
 		updateBoard();
 		printBoard();
