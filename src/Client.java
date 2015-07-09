@@ -19,11 +19,10 @@ public class Client {
 	    float startPos = networkClient.getX(myPlayerNo, 1);
 	    int startFeld = networkClient.convertCoord2Board(startPos);
 	    long time = System.nanoTime();
-	    System.out.println("Rating: " + rateSector(0, 0, 32));
 		while (networkClient.isAlive()) {
 			updateBoard();
 			findDestination(0, 0, 32);
-			System.out.println("DestinationX: " + currentDestinationX + " DestinationY: " + currentDestinationY);
+			if(myPlayerNo == 1)System.out.println("DestinationX: " + currentDestinationX + " DestinationY: " + currentDestinationY);
 			//if(myPlayerNo == 1) System.out.println("Rating for Player " + myPlayerNo + ": " + rateSector(0, 0, 32));
 		    for (int i = 0; i < 3; ++i) {
 		    	networkClient.setMoveDirection(i, 1, 1);
@@ -44,6 +43,7 @@ public class Client {
 		float bottomRightRating = rateSector(fromX+size/2, fromY, size/2);
 		float topLeftRating = rateSector(fromX, fromY+size/2, size/2);
 		float topRightRating = rateSector(fromX+size/2, fromY+size/2, size/2);
+		
 		if(bottomLeftRating >= bottomRightRating && bottomLeftRating >= topLeftRating && bottomLeftRating >= topRightRating){
 			findDestination(fromX, fromY, size/2);
 		}
@@ -89,7 +89,7 @@ public class Client {
 				}
 			}
 		}
-		System.out.println("-1: " + fieldsNotAccessible + " 0: " + fieldsFree + " 1: " + fieldsPlayerOne + " 2: " + fieldsPlayerTwo + " 3: " + fieldsPlayerThree + " 4: " + fieldsPlayerFour);
+		//System.out.println("-1: " + fieldsNotAccessible + " 0: " + fieldsFree + " 1: " + fieldsPlayerOne + " 2: " + fieldsPlayerTwo + " 3: " + fieldsPlayerThree + " 4: " + fieldsPlayerFour);
 		if(myPlayerNo == 0){
 			fieldsTakeable = fieldsFree + fieldsPlayerTwo + fieldsPlayerThree + fieldsPlayerFour;
 		} 
@@ -102,7 +102,11 @@ public class Client {
 		else if(myPlayerNo == 3){
 			fieldsTakeable = fieldsFree + fieldsPlayerOne + fieldsPlayerTwo + fieldsPlayerThree;
 		}
-		return (float)fieldsTakeable / (float)(fieldCount - fieldsNotAccessible);
+		//division by zero leads to NaN, so return 0
+		if(fieldCount - fieldsNotAccessible == 0)
+			return 0;
+		else
+			return (float)fieldsTakeable / (float)(fieldCount - fieldsNotAccessible);
 	}
 	
 	/*
