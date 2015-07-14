@@ -7,9 +7,9 @@ public class Client {
 	static NetworkClient networkClient;
 	static int[][] board = new int[32][32];
 	static int myPlayerNo;
-	static int currentDestinationX = 0;
-	static int currentDestinationY = 0;
-
+	static int[] currentDestinationX = {0,0,0};
+	static int[] currentDestinationY = {0,0,0};
+	static boolean[] hasDestination = {false, false, false};
 	
 	public static void main(String[] args) {
 		String serverIP = args[0];
@@ -21,11 +21,29 @@ public class Client {
 	    long time = System.nanoTime();
 		while (networkClient.isAlive()) {
 			updateBoard();
-			findDestination(0, 0, 32);
-			if(myPlayerNo == 1)System.out.println("DestinationX: " + currentDestinationX + " DestinationY: " + currentDestinationY);
-			//if(myPlayerNo == 1) System.out.println("Rating for Player " + myPlayerNo + ": " + rateSector(0, 0, 32));
+		
 		    for (int i = 0; i < 3; ++i) {
-		    	networkClient.setMoveDirection(i, 1, 1);
+		    	
+		    	
+		    	//calculate direction
+		    	if(!hasDestination[i]){
+		    		findDestination(0, 0, 32, i);
+		    		float x = currentDestinationX[i] - networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i));
+		    		float y = currentDestinationY[i] - networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i));
+		    		System.out.println(x + " : " + y);
+		    		networkClient.setMoveDirection(i, x, y);
+		    		hasDestination[i] = true;
+		    	}
+		    	/*if(myPlayerNo == 1)
+		    		System.out.println("currentX: " + networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i)) + 
+		    										  " currentY: " + networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i)) +
+		    										  " DestinationX: " + currentDestinationX[i] + " DestinationY: " + currentDestinationY[i]);*/
+		    	if(currentDestinationX[i] == networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i)) &&
+		    	   currentDestinationY[i] == networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i))){
+		    		hasDestination[i] = false;
+		    		networkClient.setMoveDirection(i, 0, 0);
+		    	}
+		    	
 		    }
 		    networkClient.getBoard(networkClient.convertCoord2Board(networkClient.getX(0, 0)), networkClient.convertCoord2Board(networkClient.getY(0, 0)));
 		    
@@ -33,10 +51,10 @@ public class Client {
 
 	}
 	
-	private static void findDestination(int fromX, int fromY, int size){
+	private static void findDestination(int fromX, int fromY, int size, int stoneNumber){
 		if(size == 1){
-			currentDestinationX = fromX;
-			currentDestinationY = fromY;
+			currentDestinationX[stoneNumber] = fromX;
+			currentDestinationY[stoneNumber] = fromY;
 			return;
 		}
 		float bottomLeftRating = rateSector(fromX, fromY, size/2);
@@ -45,16 +63,16 @@ public class Client {
 		float topRightRating = rateSector(fromX+size/2, fromY+size/2, size/2);
 		
 		if(bottomLeftRating >= bottomRightRating && bottomLeftRating >= topLeftRating && bottomLeftRating >= topRightRating){
-			findDestination(fromX, fromY, size/2);
+			findDestination(fromX, fromY, size/2, stoneNumber);
 		}
 		else if(bottomRightRating >= bottomLeftRating && bottomRightRating >= topLeftRating && bottomRightRating >= topRightRating){
-			findDestination(fromX+size/2, fromY, size/2);
+			findDestination(fromX+size/2, fromY, size/2, stoneNumber);
 		}
 		else if(topLeftRating >= bottomRightRating && topLeftRating >= bottomLeftRating && topLeftRating >= topRightRating){
-			findDestination(fromX, fromY+size/2, size/2);
+			findDestination(fromX, fromY+size/2, size/2, stoneNumber);
 		}
 		else if(topRightRating >= bottomRightRating && topRightRating >= bottomLeftRating && topRightRating >= topLeftRating){
-			findDestination(fromX+size/2, fromY+size/2, size/2);
+			findDestination(fromX+size/2, fromY+size/2, size/2, stoneNumber);
 		}
 			
 	}
