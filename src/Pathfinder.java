@@ -1,10 +1,13 @@
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class Pathfinder {
 
 	private static int mapWith = 32;
 	private static int mapHeight = 32;
 	private static ArrayList<ArrayList<Node>> map;
+	private ArrayList<Node> waypoints;
 
 	/*
 	 * Zum erzeugen der Karte und setzen der Kanten
@@ -14,6 +17,31 @@ public class Pathfinder {
 		createEdges();
 	}
 
+	public ArrayList<Node> aStar(int xStart, int yStart, int xEnd, int yEnd, int blockedFields){
+		waypoints = new ArrayList<Node>();
+		ArrayList<Node> openList = new ArrayList<Node>();
+		ArrayList<Node> closedList = new ArrayList<Node>();
+		//anfangs für die start node genutzt
+		Node currentNode;
+		Node startNode = map.get(xStart).get(yStart);
+		startNode-fValue = 0;
+		Node endNode = map.get(xEnd).get(yEnd);
+		
+		openList.add(startNode);
+		
+		while(!openList.isEmpty()){
+			currentNode = Collections.min(openList);
+			openList.remove(currentNode);
+			
+			if(currentNode.equals(endNode)){
+				return waypoints;
+			}
+		}
+		
+		//kein Pfad gefunden
+		return null;
+	}
+	
 	/*
 	 * Knoten erstellen für den Graphen
 	 */
@@ -56,108 +84,4 @@ public class Pathfinder {
 			}
 		}
 	}
-
-	public class Node {
-		public int x, y;
-		public Node top;
-		public Node topLeft;
-		public Node topRight;
-		public Node right;
-		public Node left;
-		public Node bottom;
-		public Node bottomLeft;
-		public Node bottomRight;
-
-		public Node(int x, int y) {
-			super();
-			this.x = x;
-			this.y = y;
-		}
-
-		public int getValue() {
-			return Client.board[x][y];
-		}
-
-		public int getX() {
-			return x;
-		}
-
-		public void setX(int x) {
-			this.x = x;
-		}
-
-		public int getY() {
-			return y;
-		}
-
-		public void setY(int y) {
-			this.y = y;
-		}
-
-		public Node getTop() {
-			return top;
-		}
-
-		public void setTop(Node top) {
-			this.top = top;
-		}
-
-		public Node getTopLeft() {
-			return topLeft;
-		}
-
-		public void setTopLeft(Node topLeft) {
-			this.topLeft = topLeft;
-		}
-
-		public Node getTopRight() {
-			return topRight;
-		}
-
-		public void setTopRight(Node topRight) {
-			this.topRight = topRight;
-		}
-
-		public Node getRight() {
-			return right;
-		}
-
-		public void setRight(Node right) {
-			this.right = right;
-		}
-
-		public Node getLeft() {
-			return left;
-		}
-
-		public void setLeft(Node left) {
-			this.left = left;
-		}
-
-		public Node getBottom() {
-			return bottom;
-		}
-
-		public void setBottom(Node bottom) {
-			this.bottom = bottom;
-		}
-
-		public Node getBottomLeft() {
-			return bottomLeft;
-		}
-
-		public void setBottomLeft(Node bottomLeft) {
-			this.bottomLeft = bottomLeft;
-		}
-
-		public Node getBottomRight() {
-			return bottomRight;
-		}
-
-		public void setBottomRight(Node bottomRight) {
-			this.bottomRight = bottomRight;
-		}
-
-	}
-
 }
