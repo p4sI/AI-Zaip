@@ -24,7 +24,7 @@ public class Pathfinder {
 		//anfangs für die start node genutzt
 		Node currentNode;
 		Node startNode = map.get(xStart).get(yStart);
-		startNode-fValue = 0;
+		startNode.fValue = 0;
 		Node endNode = map.get(xEnd).get(yEnd);
 		
 		openList.add(startNode);
@@ -36,10 +36,17 @@ public class Pathfinder {
 			if(currentNode.equals(endNode)){
 				return waypoints;
 			}
+			
+			closedList.add(currentNode);
+			expandNode(currentNode);
 		}
 		
 		//kein Pfad gefunden
 		return null;
+	}
+	
+	private void expandNode(Node currentNode){
+		
 	}
 	
 	/*
