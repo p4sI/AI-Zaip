@@ -1,5 +1,3 @@
-import java.util.Random;
-
 import lenz.htw.zaip.net.*;
 
 public class Client {
@@ -10,15 +8,14 @@ public class Client {
 	static int[] currentDestinationX = {0,0,0};
 	static int[] currentDestinationY = {0,0,0};
 	static boolean[] hasDestination = {false, false, false};
+	static Pathfinder pathfinder;
 	
 	public static void main(String[] args) {
 		String serverIP = args[0];
 		networkClient = new NetworkClient(serverIP, "HelloKitty");
 		init();
 
-	    float startPos = networkClient.getX(myPlayerNo, 1);
-	    int startFeld = networkClient.convertCoord2Board(startPos);
-	    long time = System.nanoTime();
+	    
 		while (networkClient.isAlive()) {
 			updateBoard();
 		
@@ -138,6 +135,8 @@ public class Client {
 		initBoard();
 		updateBoard();
 		printBoard();
+		pathfinder = new Pathfinder();
+		pathfinder.initNodeList();
 	}
 	
 	/*
