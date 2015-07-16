@@ -10,17 +10,14 @@ public class Client {
 	static int[] currentDestinationX = {0,0,0};
 	static int[] currentDestinationY = {0,0,0};
 	static boolean[] hasDestination = {false, false, false};
+	static ArrayList<ArrayList<Node>> waypoints;
+	static Pathfinder[] pathfinder;
 	
 	public static void main(String[] args) {
 		String serverIP = args[0];
 		networkClient = new NetworkClient(serverIP, "HelloKitty");
 		init();
-		Pathfinder pf = new Pathfinder();
-		pf.initNodeList();
-		ArrayList<Node> waypoints = pf.aStar(7, 3, 19, 22, -1);
-		Pathfinder.printPath(waypoints);
-		System.out.println();
-	    /*
+	    
 		while (networkClient.isAlive()) {
 			updateBoard();
 		
@@ -29,28 +26,42 @@ public class Client {
 		    	
 		    	//calculate direction
 		    	if(!hasDestination[i]){
+		    		if(myPlayerNo == 1)System.out.println("find");
 		    		findDestination(0, 0, 32, i);
-		    		float x = currentDestinationX[i] - networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i));
-		    		float y = currentDestinationY[i] - networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i));
-		    		System.out.println(x + " : " + y);
-		    		networkClient.setMoveDirection(i, x, y);
+
+		    		waypoints.set(i,pathfinder[i].aStar(networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i)), networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i)), currentDestinationX[i], currentDestinationY[i], -1));
+		    		Pathfinder.printPath(waypoints.get(i));
 		    		hasDestination[i] = true;
+		    		float x = waypoints.get(i).get(waypoints.size()-1).getX() - networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i));
+		    		float y = waypoints.get(i).get(waypoints.size()-1).getY() - networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i));
+		    		networkClient.setMoveDirection(i, x, y);
 		    	}
-		    	/*if(myPlayerNo == 1)
-		    		System.out.println("currentX: " + networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i)) + 
-		    										  " currentY: " + networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i)) +
-		    										  " DestinationX: " + currentDestinationX[i] + " DestinationY: " + currentDestinationY[i]);*/
+		    	//zum nächsten wegpunkt laufen
+		    	else{
+		    		if( waypoints.get(i).get(waypoints.size()-1).getX() == networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i)) && 
+		    			waypoints.get(i).get(waypoints.size()-1).getY() == networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i))){
+		    			waypoints.remove(waypoints.size()-1);
+		    			float x = waypoints.get(i).get(waypoints.size()-1).getX() - networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i));
+			    		float y = waypoints.get(i).get(waypoints.size()-1).getY() - networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i));
+			    		//networkClient.setMoveDirection(i, x, y);
+		    		}
+		    		
+		    	}
+//		    	if(myPlayerNo == 1)
+//		    		System.out.println("currentX: " + networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i)) + 
+//		    										  " currentY: " + networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i)) +
+//		    										  " DestinationX: " + currentDestinationX[i] + " DestinationY: " + currentDestinationY[i]);*/
 		    	/*if(currentDestinationX[i] == networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i)) &&
 		    	   currentDestinationY[i] == networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i))){
 		    		hasDestination[i] = false;
 		    		networkClient.setMoveDirection(i, 0, 0);
-		    	}
+		    	}*/
 		    	
 		    }
 		    networkClient.getBoard(networkClient.convertCoord2Board(networkClient.getX(0, 0)), networkClient.convertCoord2Board(networkClient.getY(0, 0)));
 		    
 		}
-		*/
+		
 
 	}
 	
@@ -137,6 +148,14 @@ public class Client {
 	 */
 	private static void init(){
 		myPlayerNo = networkClient.getMyPlayerNumber();
+		waypoints = new ArrayList<ArrayList<Node>>();
+		pathfinder = new Pathfinder[3];
+		//pathfinder
+		for(int i = 0; i < 3; i++){
+			pathfinder[i] = new Pathfinder();
+			pathfinder[i].initNodeList();
+			waypoints.add(new ArrayList<Node>());
+		}
 		System.out.println("I am Player Number " + myPlayerNo);
 		initBoard();
 		updateBoard();
