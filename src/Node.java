@@ -1,22 +1,31 @@
+import java.util.ArrayList;
+
 public class Node implements Comparable<Node> {
-		public int x, y;
-		public Node top;
-		public Node topLeft;
-		public Node topRight;
-		public Node right;
-		public Node left;
-		public Node bottom;
-		public Node bottomLeft;
-		public Node bottomRight;
-		public float fValue;
+		private int x, y;
+		private Node top;
+		private Node topLeft;
+		private Node topRight;
+		private Node right;
+		private Node left;
+		private Node bottom;
+		private Node bottomLeft;
+		private Node bottomRight;
+		private float fValue;		// Kosten Start -> Ziel (mit diesem Knoten)
+		private float hValue;		// Heuristik Knoten -> Ziel
+		private float gValue;		// Start -> Knoten
+		private Node parentNode;
+		private ArrayList<Node> successors;
 
 		public Node(int x, int y) {
 			super();
 			this.x = x;
 			this.y = y;
 			this.fValue = 0;
+			this.successors = new ArrayList<Node>();
 		}
 
+		
+		
 		public int getValue() {
 			return Client.board[x][y];
 		}
@@ -112,7 +121,68 @@ public class Node implements Comparable<Node> {
 			else
 				return 0;
 		}
-		
-		
+
+		public float getfValue() {
+			return fValue;
+		}
+
+		public void setfValue(float fValue) {
+			this.fValue = fValue;
+		}
+
+		public float gethValue() {
+			return hValue;
+		}
+
+		public void sethValue(float hValue) {
+			this.hValue = hValue;
+		}
+
+		public Node getParentNode() {
+			return parentNode;
+		}
+
+		public void setParentNode(Node parentNode) {
+			this.parentNode = parentNode;
+		}
+
+		public ArrayList<Node> getSuccessors() {
+			return successors;
+		}
+
+		public void setSuccessors() {
+			if(bottomLeft != null && 
+					(bottom != null && left != null && bottom.getValue() != -1 && left.getValue() != -1))
+				successors.add(bottomLeft);
+			if(bottom != null)
+				successors.add(bottom);
+			if(left != null)
+				successors.add(left);
+			if(right != null)
+				successors.add(right);
+			if(bottomRight != null && 
+					(bottom != null && right != null && bottom.getValue() != -1 && right.getValue() != -1))
+				successors.add(bottomRight);
+			if(top != null)
+				successors.add(top);
+			if(topLeft != null && 
+					(top != null && left != null && top.getValue() != -1 && left.getValue() != -1))
+				successors.add(topLeft);
+			if(topRight != null && 
+					(top != null && right != null && top.getValue() != -1 && right.getValue() != -1))
+				successors.add(topRight);
+		}
+
+
+
+		public float getgValue() {
+			return gValue;
+		}
+
+
+
+		public void setgValue(float gValue) {
+			this.gValue = gValue;
+		}		
 
 	}

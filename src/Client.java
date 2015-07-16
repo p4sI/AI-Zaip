@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 import lenz.htw.zaip.net.*;
 
 public class Client {
@@ -8,14 +10,17 @@ public class Client {
 	static int[] currentDestinationX = {0,0,0};
 	static int[] currentDestinationY = {0,0,0};
 	static boolean[] hasDestination = {false, false, false};
-	static Pathfinder pathfinder;
 	
 	public static void main(String[] args) {
 		String serverIP = args[0];
 		networkClient = new NetworkClient(serverIP, "HelloKitty");
 		init();
-
-	    
+		Pathfinder pf = new Pathfinder();
+		pf.initNodeList();
+		ArrayList<Node> waypoints = pf.aStar(7, 3, 19, 22, -1);
+		Pathfinder.printPath(waypoints);
+		System.out.println();
+	    /*
 		while (networkClient.isAlive()) {
 			updateBoard();
 		
@@ -35,7 +40,7 @@ public class Client {
 		    		System.out.println("currentX: " + networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i)) + 
 		    										  " currentY: " + networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i)) +
 		    										  " DestinationX: " + currentDestinationX[i] + " DestinationY: " + currentDestinationY[i]);*/
-		    	if(currentDestinationX[i] == networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i)) &&
+		    	/*if(currentDestinationX[i] == networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i)) &&
 		    	   currentDestinationY[i] == networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i))){
 		    		hasDestination[i] = false;
 		    		networkClient.setMoveDirection(i, 0, 0);
@@ -45,6 +50,7 @@ public class Client {
 		    networkClient.getBoard(networkClient.convertCoord2Board(networkClient.getX(0, 0)), networkClient.convertCoord2Board(networkClient.getY(0, 0)));
 		    
 		}
+		*/
 
 	}
 	
@@ -135,8 +141,7 @@ public class Client {
 		initBoard();
 		updateBoard();
 		printBoard();
-		pathfinder = new Pathfinder();
-		pathfinder.initNodeList();
+		
 	}
 	
 	/*
