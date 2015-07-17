@@ -11,12 +11,15 @@ public class Client {
 	static int[] currentDestinationY = {0,0,0};
 	static ArrayList<ArrayList<Node>> waypointLists;
 	static Pathfinder[] pathfinders;
-	static long searchDestinationLoopTime;
+	static long[] searchDestinationLoopTime;
 	static long stoneOneStopTime;
+	
+	//statistics
+	static int pathsOverOwnFields;
 	
 	public static void main(String[] args) {
 		String serverIP = args[0];
-		networkClient = new NetworkClient(serverIP, "HelloKitty");
+		networkClient = new NetworkClient(serverIP, "HelloTitty");
 		init();
 	    
 		while (networkClient.isAlive()) {
@@ -25,10 +28,10 @@ public class Client {
 		    	updateBoard();
 		    	
 		    	// Alle zwei Sekunden neues Ziel suchen
-		    	if(System.currentTimeMillis() - searchDestinationLoopTime > 2500
+		    	if(System.currentTimeMillis() - searchDestinationLoopTime[i] > 500
 		    			|| waypointLists.get(i).isEmpty()){
 		    		findDestinationAndCreateWaypoints(i);
-		    		searchDestinationLoopTime = System.currentTimeMillis();
+		    		searchDestinationLoopTime[i] = System.currentTimeMillis();
 		    	}
 		    	// Ziel vorhanden, zum nächsten Wegpunkt laufen
 		    	else{
@@ -60,6 +63,7 @@ public class Client {
 		    	}
 		    }
 		}
+		System.out.println("ende");
 	}
 	
 	/*
@@ -75,27 +79,28 @@ public class Client {
 				networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i)), 
 				currentDestinationX[i], 
 				currentDestinationY[i], 
-				myPlayerNo);
+				myPlayerNo+1);
 		
 		// Falls keine Weg gefunden wurde, erstelle neuen Weg bei dem auch eigenen Felder OK sind
-		if(newWaypoints == null)
+		if(newWaypoints == null){
 			newWaypoints = pathfinders[i].aStar(
     				networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i)), 
     				networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i)), 
     				currentDestinationX[i], 
     				currentDestinationY[i], 
     				-1);
-		
+			System.out.println(++pathsOverOwnFields);
+		}
 		waypointLists.set(i, newWaypoints);
 		
 		// Debug print
-		/*
-		System.out.println("P: " + myPlayerNo + " S: " + i 
+		
+		if(i==0 && myPlayerNo == 0)System.out.println("P: " + myPlayerNo + " S: " + i 
 		+ " From: (" + networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i))
 		+ "/" + networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i)) + ") "
 		+ "To: (" + currentDestinationX[i] + "/" + currentDestinationY[i] + ")" );
-		Pathfinder.printPath(newWaypoints);
-		*/
+		//Pathfinder.printPath(newWaypoints);
+		
 	}
 
 	/*
@@ -192,7 +197,10 @@ public class Client {
 		myPlayerNo = networkClient.getMyPlayerNumber();
 		waypointLists = new ArrayList<ArrayList<Node>>();
 		pathfinders = new Pathfinder[3];
-		searchDestinationLoopTime = System.currentTimeMillis();
+		searchDestinationLoopTime = new long[3];
+		searchDestinationLoopTime[0] = System.currentTimeMillis();
+		searchDestinationLoopTime[1] = System.currentTimeMillis();
+		searchDestinationLoopTime[2] = System.currentTimeMillis();
 		
 		// Board Setup
 		initBoard();
