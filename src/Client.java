@@ -13,13 +13,15 @@ public class Client {
 	static Pathfinder[] pathfinders;
 	static long[] searchDestinationLoopTime;
 	static long stoneOneStopTime;
+	static long sectorSwitchTime;
+	static int[] preferredFields;
 	
 	//statistics
 	static int pathsOverOwnFields;
 	
 	public static void main(String[] args) {
 		String serverIP = args[0];
-		networkClient = new NetworkClient(serverIP, "HelloTitty");
+		networkClient = new NetworkClient(serverIP, "HelloKitty3200");
 		init();
 	    
 		while (networkClient.isAlive()) {
@@ -28,7 +30,7 @@ public class Client {
 		    	updateBoard();
 		    	
 		    	// Alle zwei Sekunden neues Ziel suchen
-		    	if(System.currentTimeMillis() - searchDestinationLoopTime[i] > 500
+		    	if(System.currentTimeMillis() - searchDestinationLoopTime[i] > 3200
 		    			|| waypointLists.get(i).isEmpty()){
 		    		findDestinationAndCreateWaypoints(i);
 		    		searchDestinationLoopTime[i] = System.currentTimeMillis();
@@ -47,6 +49,12 @@ public class Client {
 			    			if(System.currentTimeMillis() - stoneOneStopTime > 150){
 			    				networkClient.setMoveDirection(i, x, y);
 			    			}
+			    			else if(board[networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i))]
+			    					[networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i))]
+			    							== myPlayerNo+1){
+			    				networkClient.setMoveDirection(i, x, y);
+			    				stoneOneStopTime = System.currentTimeMillis();
+			    			}
 			    		}
 			    		
 	    			}
@@ -63,7 +71,7 @@ public class Client {
 		    	}
 		    }
 		}
-		System.out.println("ende");
+		System.out.println("PathOverOwnFields: " + pathsOverOwnFields);
 	}
 	
 	/*
@@ -89,17 +97,19 @@ public class Client {
     				currentDestinationX[i], 
     				currentDestinationY[i], 
     				-1);
-			System.out.println(++pathsOverOwnFields);
+			++pathsOverOwnFields;
 		}
 		waypointLists.set(i, newWaypoints);
 		
 		// Debug print
-		
+		/*
 		if(i==0 && myPlayerNo == 0)System.out.println("P: " + myPlayerNo + " S: " + i 
 		+ " From: (" + networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i))
 		+ "/" + networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i)) + ") "
 		+ "To: (" + currentDestinationX[i] + "/" + currentDestinationY[i] + ")" );
 		//Pathfinder.printPath(newWaypoints);
+		 
+		 */
 		
 	}
 
@@ -118,6 +128,45 @@ public class Client {
 		float bottomRightRating = rateSector(fromX+size/2, fromY, size/2);
 		float topLeftRating = rateSector(fromX, fromY+size/2, size/2);
 		float topRightRating = rateSector(fromX+size/2, fromY+size/2, size/2);
+		
+		if(size == 32){
+			if(System.currentTimeMillis() - sectorSwitchTime > 15000){
+				sectorSwitchTime = System.currentTimeMillis();
+				preferredFields[stoneNumber]++;
+				if(preferredFields[stoneNumber] == 4)
+					preferredFields[stoneNumber] = 0;
+			}
+			if(stoneNumber == 0){
+				if(preferredFields[stoneNumber] == 0)
+					bottomLeftRating += 0.15;
+				else if (preferredFields[stoneNumber] == 1)
+					bottomRightRating += 0.15;
+				else if (preferredFields[stoneNumber] == 2)
+					topRightRating += 0.15;
+				else if (preferredFields[stoneNumber] == 3)
+					topLeftRating += 0.15;
+			}
+			else if(stoneNumber == 1){
+				if(preferredFields[stoneNumber] == 0)
+					bottomLeftRating += 0.15;
+				else if (preferredFields[stoneNumber] == 1)
+					bottomRightRating += 0.15;
+				else if (preferredFields[stoneNumber] == 2)
+					topRightRating += 0.15;
+				else if (preferredFields[stoneNumber] == 3)
+					topLeftRating += 0.15;
+			}
+			else if(stoneNumber == 2){
+				if(preferredFields[stoneNumber] == 0)
+					bottomLeftRating += 0.15;
+				else if (preferredFields[stoneNumber] == 1)
+					bottomRightRating += 0.15;
+				else if (preferredFields[stoneNumber] == 2)
+					topRightRating += 0.15;
+				else if (preferredFields[stoneNumber] == 3)
+					topLeftRating += 0.15;
+			}
+		}
 		
 		if(bottomLeftRating >= bottomRightRating && bottomLeftRating >= topLeftRating && bottomLeftRating >= topRightRating){
 			findDestination(fromX, fromY, size/2, stoneNumber);
@@ -201,6 +250,12 @@ public class Client {
 		searchDestinationLoopTime[0] = System.currentTimeMillis();
 		searchDestinationLoopTime[1] = System.currentTimeMillis();
 		searchDestinationLoopTime[2] = System.currentTimeMillis();
+		sectorSwitchTime = System.currentTimeMillis();
+		preferredFields = new int[3];	// 0 = unten links, dann gegen den Uhrzeigersinn
+		preferredFields[0] = 1;		
+		preferredFields[1] = 2;		
+		preferredFields[2] = 3;		
+
 		
 		// Board Setup
 		initBoard();
