@@ -1,20 +1,20 @@
 import java.util.ArrayList;
 
 public class Node implements Comparable<Node> {
-		private int x, y;
-		private Node top;
-		private Node topLeft;
-		private Node topRight;
-		private Node right;
-		private Node left;
-		private Node bottom;
-		private Node bottomLeft;
-		private Node bottomRight;
-		private float fValue;		// Kosten Start -> Ziel (mit diesem Knoten)
-		private float hValue;		// Heuristik Knoten -> Ziel
-		private float gValue;		// Start -> Knoten
-		private Node parentNode;
-		private ArrayList<Node> successors;
+		private volatile int x, y;
+		private volatile Node top;
+		private volatile Node topLeft;
+		private volatile Node topRight;
+		private volatile Node right;
+		private volatile Node left;
+		private volatile Node bottom;
+		private volatile Node bottomLeft;
+		private volatile Node bottomRight;
+		private volatile float fValue;		// Kosten Start -> Ziel (mit diesem Knoten)
+		private volatile float hValue;		// Heuristik Knoten -> Ziel
+		private volatile float gValue;		// Start -> Knoten
+		private volatile Node parentNode;
+		private volatile ArrayList<Node> successors;
 
 		public Node(int x, int y) {
 			super();

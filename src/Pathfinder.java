@@ -6,10 +6,10 @@ public class Pathfinder {
 
 	private static int mapWith = 32;
 	private static int mapHeight = 32;
-	private ArrayList<ArrayList<Node>> map;
-	private ArrayList<Node> openList;			// für die bekannten Knoten
-	private ArrayList<Node> closedList;			// fertig untersuchte Knoten
-	private Node startNode, endNode;
+	private volatile ArrayList<ArrayList<Node>> map;
+	private volatile ArrayList<Node> openList;			// für die bekannten Knoten
+	private volatile ArrayList<Node> closedList;			// fertig untersuchte Knoten
+	private volatile Node startNode, endNode;
 	
 
 	/*
@@ -32,8 +32,8 @@ public class Pathfinder {
 		Node currentNode;
 		startNode = map.get(xStart).get(yStart);
 		startNode.setfValue(0);
+		startNode.setParentNode(null);
 		endNode = map.get(xEnd).get(yEnd);
-		
 		openList.add(startNode);
 		
 		while(!openList.isEmpty()){
@@ -165,7 +165,8 @@ public class Pathfinder {
 		ArrayList<Node> reverseWP = (ArrayList<Node>) waypoints.clone();
 		Collections.reverse(reverseWP);
 		for(Node wp : reverseWP){
-			System.out.println("x: " + wp.getX() + " y: " + wp.getY());
+			System.out.print("x:" + wp.getX() + " y:" + wp.getY() + " -> ");
 		}
+		System.out.println("");
 	}
 }
