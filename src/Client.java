@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 import lenz.htw.zaip.net.*;
 
 public class Client {
@@ -7,47 +9,115 @@ public class Client {
 	static int myPlayerNo;
 	static int[] currentDestinationX = {0,0,0};
 	static int[] currentDestinationY = {0,0,0};
-	static boolean[] hasDestination = {false, false, false};
-	static Pathfinder pathfinder;
+	static ArrayList<ArrayList<Node>> waypointLists;
+	static Pathfinder[] pathfinders;
+	static long[] searchDestinationLoopTime;
+	static long stoneOneStopTime;
+	static long sectorSwitchTime;
+	static int[] preferredFields;
+	
+	//statistics
+	static int pathsOverOwnFields;
 	
 	public static void main(String[] args) {
 		String serverIP = args[0];
-		networkClient = new NetworkClient(serverIP, "HelloKitty");
+		networkClient = new NetworkClient(serverIP, "HelloKitty3200");
 		init();
-
 	    
 		while (networkClient.isAlive()) {
-			updateBoard();
-		
 		    for (int i = 0; i < 3; ++i) {
+		    	ArrayList<Node> currentWaypoints;
+		    	updateBoard();
 		    	
-		    	
-		    	//calculate direction
-		    	if(!hasDestination[i]){
-		    		findDestination(0, 0, 32, i);
-		    		float x = currentDestinationX[i] - networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i));
-		    		float y = currentDestinationY[i] - networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i));
-		    		System.out.println(x + " : " + y);
-		    		networkClient.setMoveDirection(i, x, y);
-		    		hasDestination[i] = true;
+		    	// Alle zwei Sekunden neues Ziel suchen
+		    	if(System.currentTimeMillis() - searchDestinationLoopTime[i] > 3200
+		    			|| waypointLists.get(i).isEmpty()){
+		    		findDestinationAndCreateWaypoints(i);
+		    		searchDestinationLoopTime[i] = System.currentTimeMillis();
 		    	}
-		    	/*if(myPlayerNo == 1)
-		    		System.out.println("currentX: " + networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i)) + 
-		    										  " currentY: " + networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i)) +
-		    										  " DestinationX: " + currentDestinationX[i] + " DestinationY: " + currentDestinationY[i]);*/
-		    	if(currentDestinationX[i] == networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i)) &&
-		    	   currentDestinationY[i] == networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i))){
-		    		hasDestination[i] = false;
-		    		networkClient.setMoveDirection(i, 0, 0);
+		    	// Ziel vorhanden, zum nächsten Wegpunkt laufen
+		    	else{
+		    		currentWaypoints = waypointLists.get(i);
+		    		
+		    		// Gehe in Richtung des aktuelles Wegpunktes
+		    		if(!currentWaypoints.isEmpty()){
+		    			float x = currentWaypoints.get(currentWaypoints.size()-1).getX() - networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i));
+			    		float y = currentWaypoints.get(currentWaypoints.size()-1).getY() - networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i));
+			    		if(i != 0)
+			    			networkClient.setMoveDirection(i, x, y);
+			    		else{
+			    			if(System.currentTimeMillis() - stoneOneStopTime > 150){
+			    				networkClient.setMoveDirection(i, x, y);
+			    			}
+			    			else if(board[networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i))]
+			    					[networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i))]
+			    							== myPlayerNo+1){
+			    				networkClient.setMoveDirection(i, x, y);
+			    				stoneOneStopTime = System.currentTimeMillis();
+			    			}
+			    		}
+			    		
+	    			}
+		    		
+		    		// Prüfen ob der Stein bereits am Wegpunkt angelegt ist und falls ja, Wegpunkt entfernen und neue Richtung setzen
+		    		if(currentWaypoints.get(currentWaypoints.size()-1).getX() == networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i)) && 
+		    				currentWaypoints.get(currentWaypoints.size()-1).getY() == networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i))){
+		    			
+		    			currentWaypoints.remove(currentWaypoints.size()-1);
+				    	networkClient.setMoveDirection(i, 0, 0);
+				    	if(i == 0)
+				    		stoneOneStopTime = System.currentTimeMillis();
+		    		}
 		    	}
-		    	
 		    }
-		    networkClient.getBoard(networkClient.convertCoord2Board(networkClient.getX(0, 0)), networkClient.convertCoord2Board(networkClient.getY(0, 0)));
-		    
 		}
-
+		System.out.println("PathOverOwnFields: " + pathsOverOwnFields);
 	}
 	
+	/*
+	 * Sucht ein neues Ziel und generiert die Wegpunkte für den Stein welcher
+	 * übergeben wird. 
+	 */
+	private static void findDestinationAndCreateWaypoints(int i) {
+		findDestination(0, 0, 32, i);
+
+		// Neue Wegpunkte erstellen: Dabei nicht über eigene Felder gehen
+		ArrayList<Node> newWaypoints = pathfinders[i].aStar(
+				networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i)), 
+				networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i)), 
+				currentDestinationX[i], 
+				currentDestinationY[i], 
+				myPlayerNo+1);
+		
+		// Falls keine Weg gefunden wurde, erstelle neuen Weg bei dem auch eigenen Felder OK sind
+		if(newWaypoints == null){
+			newWaypoints = pathfinders[i].aStar(
+    				networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i)), 
+    				networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i)), 
+    				currentDestinationX[i], 
+    				currentDestinationY[i], 
+    				-1);
+			++pathsOverOwnFields;
+		}
+		waypointLists.set(i, newWaypoints);
+		
+		// Debug print
+		/*
+		if(i==0 && myPlayerNo == 0)System.out.println("P: " + myPlayerNo + " S: " + i 
+		+ " From: (" + networkClient.convertCoord2Board(networkClient.getX(myPlayerNo, i))
+		+ "/" + networkClient.convertCoord2Board(networkClient.getY(myPlayerNo, i)) + ") "
+		+ "To: (" + currentDestinationX[i] + "/" + currentDestinationY[i] + ")" );
+		//Pathfinder.printPath(newWaypoints);
+		 
+		 */
+		
+	}
+
+	/*
+	 * Sucht ein Ziel, je nachdem wie die momentante Feldsituation aussieht:
+	 * Es wird das Feld in einzelne Teile zerlegt und die kleineren Teile
+	 * Untersucht, solange bis nurnoch ein Kästchen untersucht wird.
+	 */
 	private static void findDestination(int fromX, int fromY, int size, int stoneNumber){
 		if(size == 1){
 			currentDestinationX[stoneNumber] = fromX;
@@ -58,6 +128,45 @@ public class Client {
 		float bottomRightRating = rateSector(fromX+size/2, fromY, size/2);
 		float topLeftRating = rateSector(fromX, fromY+size/2, size/2);
 		float topRightRating = rateSector(fromX+size/2, fromY+size/2, size/2);
+		
+		if(size == 32){
+			if(System.currentTimeMillis() - sectorSwitchTime > 15000){
+				sectorSwitchTime = System.currentTimeMillis();
+				preferredFields[stoneNumber]++;
+				if(preferredFields[stoneNumber] == 4)
+					preferredFields[stoneNumber] = 0;
+			}
+			if(stoneNumber == 0){
+				if(preferredFields[stoneNumber] == 0)
+					bottomLeftRating += 0.15;
+				else if (preferredFields[stoneNumber] == 1)
+					bottomRightRating += 0.15;
+				else if (preferredFields[stoneNumber] == 2)
+					topRightRating += 0.15;
+				else if (preferredFields[stoneNumber] == 3)
+					topLeftRating += 0.15;
+			}
+			else if(stoneNumber == 1){
+				if(preferredFields[stoneNumber] == 0)
+					bottomLeftRating += 0.15;
+				else if (preferredFields[stoneNumber] == 1)
+					bottomRightRating += 0.15;
+				else if (preferredFields[stoneNumber] == 2)
+					topRightRating += 0.15;
+				else if (preferredFields[stoneNumber] == 3)
+					topLeftRating += 0.15;
+			}
+			else if(stoneNumber == 2){
+				if(preferredFields[stoneNumber] == 0)
+					bottomLeftRating += 0.15;
+				else if (preferredFields[stoneNumber] == 1)
+					bottomRightRating += 0.15;
+				else if (preferredFields[stoneNumber] == 2)
+					topRightRating += 0.15;
+				else if (preferredFields[stoneNumber] == 3)
+					topLeftRating += 0.15;
+			}
+		}
 		
 		if(bottomLeftRating >= bottomRightRating && bottomLeftRating >= topLeftRating && bottomLeftRating >= topRightRating){
 			findDestination(fromX, fromY, size/2, stoneNumber);
@@ -74,6 +183,10 @@ public class Client {
 			
 	}
 	
+	/*
+	 * Bewertet einen Feldausschnitt:
+	 * Gibt eine prozentuale Angabe über die neu einfärbbaren Felder zurück
+	 */
 	private static float rateSector(int fromX, int fromY, int size){
 		int fieldCount = size*size;
 		int fieldsNotAccessible = 0;
@@ -117,7 +230,7 @@ public class Client {
 		else if(myPlayerNo == 3){
 			fieldsTakeable = fieldsFree + fieldsPlayerOne + fieldsPlayerTwo + fieldsPlayerThree;
 		}
-		//division by zero leads to NaN, so return 0
+		// Division durch null ergibt NaN, also return 0
 		if(fieldCount - fieldsNotAccessible == 0)
 			return 0;
 		else
@@ -131,12 +244,33 @@ public class Client {
 	 */
 	private static void init(){
 		myPlayerNo = networkClient.getMyPlayerNumber();
-		System.out.println("I am Player Number " + myPlayerNo);
+		waypointLists = new ArrayList<ArrayList<Node>>();
+		pathfinders = new Pathfinder[3];
+		searchDestinationLoopTime = new long[3];
+		searchDestinationLoopTime[0] = System.currentTimeMillis();
+		searchDestinationLoopTime[1] = System.currentTimeMillis();
+		searchDestinationLoopTime[2] = System.currentTimeMillis();
+		sectorSwitchTime = System.currentTimeMillis();
+		preferredFields = new int[3];	// 0 = unten links, dann gegen den Uhrzeigersinn
+		preferredFields[0] = 1;		
+		preferredFields[1] = 2;		
+		preferredFields[2] = 3;		
+
+		
+		// Board Setup
 		initBoard();
 		updateBoard();
 		printBoard();
-		pathfinder = new Pathfinder();
-		pathfinder.initNodeList();
+		
+		// Pathfinder Setup
+		for(int i = 0; i < 3; i++){
+			pathfinders[i] = new Pathfinder();
+			pathfinders[i].initNodeList();
+			waypointLists.add(new ArrayList<Node>());
+		}
+		System.out.println("I am Player Number " + myPlayerNo);
+		
+		
 	}
 	
 	/*

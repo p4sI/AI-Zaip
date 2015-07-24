@@ -1,19 +1,117 @@
 import java.util.ArrayList;
+import java.util.Collections;
+
 
 public class Pathfinder {
 
 	private static int mapWith = 32;
 	private static int mapHeight = 32;
-	private static ArrayList<ArrayList<Node>> map;
+	private volatile ArrayList<ArrayList<Node>> map;
+	private volatile ArrayList<Node> openList;			// für die bekannten Knoten
+	private volatile ArrayList<Node> closedList;			// fertig untersuchte Knoten
+	private volatile Node startNode, endNode;
+	
 
 	/*
-	 * Zum erzeugen der Karte und setzen der Kanten
+	 * Zum Erzeugen der Karte und setzen der Kanten
 	 */
 	public void initNodeList() {
 		createMap();
 		createEdges();
 	}
 
+	/*
+	 * A*-Algorithmus
+	 * Liefert eine Liste mit allen Knoten vom Start bis zum Ende. 
+	 * Das erste Element in der Liste ist dabei der Endknoten, 
+	 * das letzte Element ist der erste Punkt nach dem Start
+	 */
+	public ArrayList<Node> aStar(int xStart, int yStart, int xEnd, int yEnd, int blockedFields){
+		openList = new ArrayList<Node>();
+		closedList = new ArrayList<Node>();
+		Node currentNode;
+		startNode = map.get(xStart).get(yStart);
+		startNode.setfValue(0);
+		startNode.setParentNode(null);
+		endNode = map.get(xEnd).get(yEnd);
+		openList.add(startNode);
+		
+		while(!openList.isEmpty()){
+			currentNode = Collections.min(openList);
+			openList.remove(currentNode);
+			
+			// Wenn der momentane Knoten das Ende ist, wird der Pfad erstellt
+			// und zurück gegeben. Pfad geht vom Endknoten zum Startknoten!
+			if(currentNode.equals(endNode)){
+				return buildWaypoints(endNode);
+			}
+			
+			closedList.add(currentNode);
+			expandNode(currentNode, blockedFields);
+		}
+		
+		// kein Pfad gefunden
+		return null;
+	}
+	
+	/*
+	 * Durchsucht die Nachbarknoten und fügt sie der openList hinzu wenn
+	 * der Knoten zum ersten mal gefunden wurde oder ein besserer Weg
+	 * zu diesem Knoten gefunden wurde
+	 */
+	private void expandNode(Node currentNode, int blockedFields){
+		for(Node successor : currentNode.getSuccessors()){
+			// Wenn der Knoten bereits in der closedList steht, mache nichts
+			if(closedList.contains(successor)) continue;
+			
+			// Wenn das Nachbarfeld ein Hinderniss ist (oder die eigene Farbe), mache nichts
+			if(successor.getValue() == -1 || successor.getValue() == blockedFields) continue;
+			
+			// g Wert für den neuen Weg ist der Wert des Vorgängers + 1 für den neuen Weg
+			float tentative_gValue = currentNode.getgValue() + 1;
+			
+			// Wenn der successor bereits auf der open Liste ist, sein neuer Weg
+			// jedoch nicht besser ist als der alte, mache nichts
+			if(openList.contains(successor) && tentative_gValue >= successor.getgValue()) continue;
+			
+			// Der neue Weg ist kürzer: Zeiger zum vorgänger wird gesetzt und
+			// der g Wert gespeichert
+			successor.setParentNode(currentNode);
+			successor.setgValue(tentative_gValue);
+			
+			// h Wert setzen ('Luftlinie' zwischen Knoten und Ziel)
+			successor.sethValue(getDistance(successor, endNode));
+			
+			// Neuen f Wert am Knoten ändern und ggfls in openList einfügen
+			successor.setfValue(tentative_gValue + successor.gethValue());
+			if(!openList.contains(successor))
+				openList.add(successor);
+		}
+	}
+	
+	/*
+	 * Berechnet die Distanz zwischen zwei Nodes
+	 */
+	private float getDistance (Node a, Node b){
+		return (float) Math.sqrt(Math.pow(b.getX() - a.getX(), 2) 
+				+ Math.pow(b.getY() - a.getY(), 2));
+	}
+	
+	/*
+	 * Geht über die Zeiger vom letzten Knoten solange zurück
+	 * bis kein vorgänger Knoten mehr vorhanden ist und speichert
+	 * diese in einer Liste
+	 */
+	private ArrayList<Node> buildWaypoints(Node endNode){
+		ArrayList<Node> waypoints = new ArrayList<Node>();
+		Node currentNode = endNode;
+		while(currentNode.getParentNode() != null){
+			waypoints.add(currentNode);
+			currentNode = currentNode.getParentNode();
+		}
+		return waypoints;
+	}
+	
 	/*
 	 * Knoten erstellen für den Graphen
 	 */
@@ -53,111 +151,22 @@ public class Pathfinder {
 					node.setLeft(map.get(x - 1).get(y));
 				if (!(x == 0) && !(y == mapHeight - 1))
 					node.setTopLeft(map.get(x - 1).get(y + 1));
+				// Alle Nachbarknoten eintragen
+				node.setSuccessors();
 			}
 		}
 	}
-
-	public class Node {
-		public int x, y;
-		public Node top;
-		public Node topLeft;
-		public Node topRight;
-		public Node right;
-		public Node left;
-		public Node bottom;
-		public Node bottomLeft;
-		public Node bottomRight;
-
-		public Node(int x, int y) {
-			super();
-			this.x = x;
-			this.y = y;
+	
+	/*
+	 * Gibt den Pfad in der Console aus
+	 */
+	public static void printPath(ArrayList<Node> waypoints){
+		@SuppressWarnings("unchecked")
+		ArrayList<Node> reverseWP = (ArrayList<Node>) waypoints.clone();
+		Collections.reverse(reverseWP);
+		for(Node wp : reverseWP){
+			System.out.print("x:" + wp.getX() + " y:" + wp.getY() + " -> ");
 		}
-
-		public int getValue() {
-			return Client.board[x][y];
-		}
-
-		public int getX() {
-			return x;
-		}
-
-		public void setX(int x) {
-			this.x = x;
-		}
-
-		public int getY() {
-			return y;
-		}
-
-		public void setY(int y) {
-			this.y = y;
-		}
-
-		public Node getTop() {
-			return top;
-		}
-
-		public void setTop(Node top) {
-			this.top = top;
-		}
-
-		public Node getTopLeft() {
-			return topLeft;
-		}
-
-		public void setTopLeft(Node topLeft) {
-			this.topLeft = topLeft;
-		}
-
-		public Node getTopRight() {
-			return topRight;
-		}
-
-		public void setTopRight(Node topRight) {
-			this.topRight = topRight;
-		}
-
-		public Node getRight() {
-			return right;
-		}
-
-		public void setRight(Node right) {
-			this.right = right;
-		}
-
-		public Node getLeft() {
-			return left;
-		}
-
-		public void setLeft(Node left) {
-			this.left = left;
-		}
-
-		public Node getBottom() {
-			return bottom;
-		}
-
-		public void setBottom(Node bottom) {
-			this.bottom = bottom;
-		}
-
-		public Node getBottomLeft() {
-			return bottomLeft;
-		}
-
-		public void setBottomLeft(Node bottomLeft) {
-			this.bottomLeft = bottomLeft;
-		}
-
-		public Node getBottomRight() {
-			return bottomRight;
-		}
-
-		public void setBottomRight(Node bottomRight) {
-			this.bottomRight = bottomRight;
-		}
-
+		System.out.println("");
 	}
-
 }
